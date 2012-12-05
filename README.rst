@@ -19,7 +19,7 @@ Connecting to a Rexster instance
 
 >>> from rexster import RexsterServer, RexsterGraph 
 >>> #Connecting to server
->>> HOST = 'http://localhost:8182'
+>>> HOST = 'http://localhost:8182/graphs'
 >>> server = RexsterServer(HOST)
 >>> #List graphs availbale in server
 >>> server.graphs()
