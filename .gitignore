@@ -1,3 +1,4 @@
 *.*~
 *.pyc
 ENV/
+python_rexster.egg-info/

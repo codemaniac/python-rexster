@@ -486,10 +486,12 @@ class RexsterIndexableGraph(RexsterGraph):
         data = {'class': indexClass, 'type': indexType}
         if indexType == 'automatic':
             data['keys'] = autoKeys
+        print data
         r = requests.post(url, data=data)
         content = simplejson.loads(r.content)
         if r.error:
             raise RexsterException(content['message'])
+        print content
         return content['results']
 
     def createManualIndex(self, indexName, indexClass):
@@ -501,17 +503,19 @@ class RexsterIndexableGraph(RexsterGraph):
         content = self.__createIndex(indexName, indexClass, 'manual')
         return Index(self, content['name'], content['class'], content['type'])
 
-    def createAutomaticIndex(self, indexName, indexClass, autoKeys=[]):
+    def createAutomaticIndex(self, indexName, indexClass, autoKey):
         """Creates an automatic index
         @params name: The index name
         @params indexClass: vertex or edge
-        @params autoKeys: A list of the automatically indexed properties
+        @params autoKey: The automatically indexed property"""
 
-        @returns The created AutomaticIndex"""
-        content = self.__createIndex(indexName, indexClass, 'automatic',
-                                    autoKeys)
-        return AutomaticIndex(self, content['name'], content['class'],
-                            content['type'])
+        indexClass = indexClass.lower()
+        if indexClass != 'vertex' and indexClass != 'edge':
+            raise RexsterException("%s is not a valid indexClass" % indexClass)
+        url = "%s/keyindices/%s/%s" % (self.url, indexClass, autoKey)
+        r = requests.post(url)
+        if r.error:          
+          raise RexsterException('Key Index create error !')
 
     def getIndices(self):
         """Returns a generator function over all the existing indexes
