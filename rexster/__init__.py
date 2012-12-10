@@ -4,11 +4,11 @@
 import requests
 import simplejson
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class RexsterException(BaseException):
     pass
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class RexsterServer(object):
     """An class that implements a way to connect to
     a Rexster Instance from Python"""
@@ -36,12 +36,13 @@ class RexsterServer(object):
         """Returns a list of available graphs"""
         return self.data.get('graphs')
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class Element(object):
     """An class defining an Element object composed
     by a collection of key/value properties for the
     Rexster compatible database"""
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __init__(self, graph, url):
         """Creates a new element
         @params graph: The graph object the element belongs
@@ -60,12 +61,14 @@ class Element(object):
             self.properties[key] = value
         self._id = self.properties.get('_id')
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getId(self):
         """Returns the unique identifier of the element
 
         @returns The unique identifier of the element"""
         return self._id
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def updateProperties(self, **params):
         """Updates the properties of the element to the given value
         @params params: The property key-value dictionary to set"""
@@ -80,7 +83,8 @@ class Element(object):
         if r.error:
             error_msg = simplejson.loads(r.content)['message']
             raise RexsterException(error_msg)
-        
+
+    # Rexster v2.2.0-SNAPSHOT tested !        
     def getProperty(self, key):
         """Gets the value of the property for the given key
         @params key: The key which value is being retrieved
@@ -91,12 +95,14 @@ class Element(object):
         except KeyError:
           raise RexsterException('No such property for element')
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getPropertyKeys(self):
         """Returns a set with the property keys of the element
 
         @returns Set of property keys"""
         return self.properties.keys()
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def removeProperties(self, *keys):
         """Removes the value of the property for the given key
         @params key: The key which value is being removed"""        
@@ -108,6 +114,7 @@ class Element(object):
           for key in keys:
             del self.properties[key]
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __eq__(self, other):
       if type(self) == type(other):
         return self.getId() == other.getId()
@@ -119,6 +126,7 @@ class Vertex(Element):
     """An abstract class defining a Vertex object representing
     a node of the graph with a set of properties"""
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __init__(self, graph, _id):
         """Creates a new vertex
         @params graph: The graph object the vertex belongs
@@ -215,6 +223,7 @@ class Edge(Element):
 
 class RexsterGraph(object):
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __init__(self, server, name):
         self.server = server
         self.name = name
@@ -224,7 +233,8 @@ class RexsterGraph(object):
         r = requests.get(self.url)
         return simplejson.loads(r.content)
 
-    def addVertex(self, _id=None, props=None):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def addVertex(self, _id=None, properties=None):
         """Adds a new vertex
         @params _id: Node unique identifier
 
@@ -237,9 +247,9 @@ class RexsterGraph(object):
         if r.error:
             raise RexsterException("Could not create vertex")
         else:
-            properties = simplejson.loads(r.content)['results']
-            v = Vertex(self, properties['_id'])
-            v.updateProperties(**props)
+            props = simplejson.loads(r.content)['results']
+            v = Vertex(self, props['_id'])
+            v.updateProperties(**properties)
             return v
 
     def getVertex(self, _id):
@@ -252,6 +262,7 @@ class RexsterGraph(object):
         except RexsterException:
             return None
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getKeyIndexedVertices(self, key, value):
         """get all vertices for a key index given the specified <key>/<value>
         @params key: Vertex key string
@@ -508,6 +519,7 @@ class RexsterIndexableGraph(RexsterGraph):
         content = self.__createIndex(indexName, indexClass, 'manual')
         return Index(self, content['name'], content['class'], content['type'])
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def createAutomaticIndex(self, indexName, indexClass, autoKey):
         """Creates an automatic index
         @params name: The index name
