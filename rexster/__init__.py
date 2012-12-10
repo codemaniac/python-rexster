@@ -66,55 +66,53 @@ class Element(object):
         @returns The unique identifier of the element"""
         return self._id
 
-    def setProperty(self, key, value):
-        """Sets the property of the element to the given value
-        @params key: The property key to set
-        @params value: The value to set"""
-        r = requests.post(self.url, data={key: value})
+    def updateProperties(self, **params):
+        """Updates the properties of the element to the given value
+        @params params: The property key-value dictionary to set"""
+        for key, value in params.iteritems():
+          self.properties[key] = value
+
+        url_frag = ''
+        for key, value in self.properties.iteritems():
+          url_frag += '%s=%s&' % (key,value)
+          
+        r = requests.put(self.url + '?' + url_frag)
         if r.error:
             error_msg = simplejson.loads(r.content)['message']
             raise RexsterException(error_msg)
-        self.properties[key] = value
-
+        
     def getProperty(self, key):
         """Gets the value of the property for the given key
         @params key: The key which value is being retrieved
 
         @returns The value of the property with the given key"""
-        r = requests.get(self.url)
-        properties = simplejson.loads(r.content)
-        if r.error:
-            raise RexsterException(properties['message'])
-        else:
-            return properties['results'].get(key)
+        try:
+          return self.properties[key]         
+        except KeyError:
+          raise RexsterException('No such property for element')
 
     def getPropertyKeys(self):
         """Returns a set with the property keys of the element
 
         @returns Set of property keys"""
-        r = requests.get(self.url)
-        properties = simplejson.loads(r.content)
-        if r.error:
-            raise RexsterException(properties['message'])
-        else:
-            return properties['results'].keys()
+        return self.properties.keys()
 
-    def removeProperty(self, key):
+    def removeProperties(self, *keys):
         """Removes the value of the property for the given key
-        @params key: The key which value is being removed"""
-        r = requests.delete(self.url, params=key)
+        @params key: The key which value is being removed"""        
+        r = requests.delete(self.url + '?' + '&'.join(keys))
         if r.error:
             error_msg = simplejson.loads(r.content)['message']
             raise RexsterException(error_msg)
-        self.properties.pop(key)
+        else:
+          for key in keys:
+            del self.properties[key]
 
     def __eq__(self, other):
-        """Two elements are equals when they are the same type() and the same id
-        @params other: the objects to be compared with"""
-	if type(self) == type(other):
-		return self.getId() == other.getId()
-	else:
-		return False
+      if type(self) == type(other):
+        return self.getId() == other.getId()
+      else:
+        return False
 
 
 class Vertex(Element):
@@ -226,7 +224,7 @@ class RexsterGraph(object):
         r = requests.get(self.url)
         return simplejson.loads(r.content)
 
-    def addVertex(self, _id=None):
+    def addVertex(self, _id=None, props=None):
         """Adds a new vertex
         @params _id: Node unique identifier
 
@@ -240,7 +238,9 @@ class RexsterGraph(object):
             raise RexsterException("Could not create vertex")
         else:
             properties = simplejson.loads(r.content)['results']
-            return Vertex(self, properties['_id'])
+            v = Vertex(self, properties['_id'])
+            v.updateProperties(**props)
+            return v
 
     def getVertex(self, _id):
         """Retrieves an existing vertex from the graph
@@ -251,6 +251,22 @@ class RexsterGraph(object):
             return Vertex(self, _id)
         except RexsterException:
             return None
+
+    def getKeyIndexedVertices(self, key, value):
+        """get all vertices for a key index given the specified <key>/<value>
+        @params key: Vertex key string
+        @params value: Vertex value string
+
+        @returns The requested Vertices or None"""
+        try:
+            requrl = "%s/vertices?key=%s&value=%s" % (self.url, key, value)
+            r = requests.get(requrl)
+            if r.error:
+              raise RexsterException("Could retrieve indexed vertices")
+            for vertex in simplejson.loads(r.content)['results']:
+              yield Vertex(self, vertex.get('_id'))            
+        except KeyError:
+            raise RexsterException("Could retrieve indexed vertices")
 
     def getVertices(self):
         """Returns an iterator with all the vertices"""
@@ -460,17 +476,6 @@ class Index(object):
         return "Index %s (%s, %s)" % (self.indexName,
                                     self.indexClass,
                                     self.indexType)
-
-
-class AutomaticIndex(Index):
-
-    def getAutoIndexKeys(self):
-        url = "%s/keys" % self.url
-        r = requests.get(url)
-        content = simplejson.loads(r.content)
-        if r.error:
-            raise RexsterException(content['message'])
-        return content['results']
 
 
 class RexsterIndexableGraph(RexsterGraph):
