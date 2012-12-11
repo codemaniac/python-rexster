@@ -364,33 +364,24 @@ class RexsterGraph(object):
         if r.error:
             raise RexsterException("Could not delete edge")
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def gremlin_execute(self, gremlin_script):
-        url = '%s/tp/gremlin' % (self.url)
-        r = requests.post(url, data={'script':gremlin_script})
+        url = '%s/tp/gremlin?script=%s' % (self.url, gremlin_script)
+        r = requests.get(url)
         if r.content:
-            content = simplejson.loads(r.content)
-
+            content = simplejson.loads(r.content)['results']
         if r.error:
             raise RexsterException(content['message'])
         elif content:
             return content
 
-    # attention: gremlin must be enabled        
+    # Rexster v2.2.0-SNAPSHOT tested !
     def shortest_path(self, start, end):
         if type(start) != Vertex or type(end) != Vertex:
             raise RexsterException("both start and end must be valid vertices!")
 
-        #gremlin_script = 'g = rexster.getGraph("%s")' % self.name
-        #gremlin_result = self.gremlin_execute(gremlin_script)['results']
-#        gremlin_script = 'gj = new GraphJung(g)'
-#        self.gremlin_execute(gremlin_script)
-#        gremlin_script = 'dsp = new edu.uci.ics.jung.algorithms.shortestpath.DijkstraShortestPath(gj)'
-#        self.gremlin_execute(gremlin_script)
-#        gremlin_script = 'dsp.getPath(g.v(%d),g.v(%d))' % (start.getId(), end.getId())
-#        gremlin_result = self.gremlin_execute(gremlin_script)['results']
-
         gremlin_script = '(new edu.uci.ics.jung.algorithms.shortestpath.DijkstraShortestPath(new GraphJung(g))).getPath(g.v(%d),g.v(%d))' % (start.getId(), end.getId())
-        gremlin_result = self.gremlin_execute(gremlin_script)['results']
+        gremlin_result = self.gremlin_execute(gremlin_script)
 
         for edge in gremlin_result:
             yield Edge(self, edge.get('_id'))
