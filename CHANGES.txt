@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+0.2 (2012-12-10)
+------------------
+- Modified to work with Rexster v2.2.0-SNAPSHOT
+
 0.1.1 (2011-07-12)
 ------------------
 - Added returning None instead of raising exceptions (more pythonic way)
