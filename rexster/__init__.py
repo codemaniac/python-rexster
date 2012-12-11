@@ -230,7 +230,7 @@ class Edge(Element):
     def __str__(self):
         return "Edge %s: %s" % (self._id, self.properties)
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class RexsterGraph(object):
 
     # Rexster v2.2.0-SNAPSHOT tested !
@@ -239,6 +239,7 @@ class RexsterGraph(object):
         self.name = name
         self.url = "%s/%s" % (server.host, name)
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getMetadata(self):
         r = requests.get(self.url)
         return simplejson.loads(r.content)
@@ -386,24 +387,25 @@ class RexsterGraph(object):
         for edge in gremlin_result:
             yield Edge(self, edge.get('_id'))
 
+# Rexster v2.2.0-SNAPSHOT tested !
 class Index(object):
     """An class containing all the methods needed by an
     Index object"""
 
-    def __init__(self, graph, indexName, indexClass, indexType):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def __init__(self, graph, indexName, indexClass):
         self.graph = graph
         self.indexName = indexName
-        self.indexType = indexType
         short_indexClass = (indexClass.split('.')[-1]).lower()
-	if 'vertex' in short_indexClass:
-        	self.indexClass = 'vertex'
-	elif 'edge' in short_indexClass:
-		self.indexClass = 'edge'
-	else:
-		raise RexsterException("Cannot determine indexClass for %s" % indexClass)
-        self.url = "%s/indices/%s" % (self.graph.url,
-                                    self.indexName)
+        if 'vertex' in short_indexClass:
+          self.indexClass = 'vertex'
+        elif 'edge' in short_indexClass:
+          self.indexClass = 'edge'
+        else:
+          raise RexsterException("Cannot determine indexClass for %s" % indexClass)
+        self.url = "%s/indices/%s" % (self.graph.url, self.indexName)
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def count(self, key, value):
         """Returns the number of elements indexed for a
         given key-value pair
@@ -411,32 +413,28 @@ class Index(object):
         @params outVertex: Index value string
 
         @returns The number of elements indexed"""
-        url = "%s/count" % self.url
-        r = requests.get(url, params={'key': key,
-                                    'value': value})
+        url = "%s/count?key=%s&value=%s" % (self.url, key, value)
+        r = requests.get(url)
         content = simplejson.loads(r.content)
         if r.error:
             raise RexsterException(content['message'])
         return content['totalSize']
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getIndexName(self):
         """Returns the name of the index
 
         @returns The name of the index"""
         return self.indexName
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getIndexClass(self):
         """Returns the index class (VERTICES or EDGES)
 
         @returns The index class"""
         return self.indexClass
 
-    def getIndexType(self):
-        """Returns the index type (AUTOMATIC or MANUAL)
-
-        @returns The index type"""
-        return self.indexType
-
+    # Rexster v2.2.0-SNAPSHOT tested !
     def put(self, key, value, element):
         """Puts an element in an index under a given
         key-value pair
@@ -448,24 +446,22 @@ class Index(object):
         elif isinstance(element, Edge):
             klass = 'edge'
         else:
-            raise RexsterException("Unknown element type")
-        data = {'key': key,
-                'value': value,
-                'class': klass,
-                'id': element.getId()}
-        r = requests.post(self.url, data)
+            raise RexsterException("Unknown element type")        
+        urlfrag = '?key=%s&value=%s&id=%d' % (key, value, element.getId())
+        r = requests.put(self.url + urlfrag)
         if r.error:
             error_msg = simplejson.loads(r.content)['message']
             raise RexsterException(error_msg)
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def get(self, key, value):
         """Gets an element from an index under a given
         key-value pair
         @params key: Index key string
         @params value: Index value string
         @returns A generator of Vertex or Edge objects"""
-        r = requests.get(self.url, params={'key': key,
-                                        'value': value})
+        urlfrag = '?key=%s&value=%s' % (key, value)
+        r = requests.get(self.url + urlfrag)
         content = simplejson.loads(r.content)
         if r.error:
             raise RexsterException(content['message'])
@@ -475,6 +471,7 @@ class Index(object):
             else:
                 yield Edge(self.graph, item.get('_id'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def remove(self, key, value, element):
         """Removes an element from an index under a given
         key-value pair
@@ -488,46 +485,39 @@ class Index(object):
         else:
             raise RexsterException("Unknown element to be deleted")
         _id = element.getId()
-        data = {'class': klass, 'key': key, 'value': value, 'id': _id}
-        r = requests.delete(self.url, params=data)
+        urlfrag = '?key=%s&value=%s&class=%s&id=%d' % (key, value, self.indexClass, _id)
+        r = requests.delete(self.url + urlfrag)
         if r.error:
             raise RexsterException("Could not delete element")
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __str__(self):
-        return "Index %s (%s, %s)" % (self.indexName,
-                                    self.indexClass,
-                                    self.indexType)
+        return "Index (%s, %s)" % (self.indexName, self.indexClass)
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class RexsterIndexableGraph(RexsterGraph):
     """An class containing the specific methods
-    for indexable graphs"""
+    for indexable graphs"""   
 
-    def __createIndex(self, indexName, indexClass, indexType, autoKeys=[]):
-        indexClass = indexClass.lower()
-        if indexClass != 'vertex' and indexClass != 'edge':
-            raise RexsterException("%s is not a valid indexClass" \
-                                    % indexClass)
-        url = "%s/indices/%s" % (self.url, indexName)
-        data = {'class': indexClass, 'type': indexType}
-        if indexType == 'automatic':
-            data['keys'] = autoKeys
-        print data
-        r = requests.post(url, data=data)
-        content = simplejson.loads(r.content)
-        if r.error:
-            raise RexsterException(content['message'])
-        print content
-        return content['results']
-
+    # Rexster v2.2.0-SNAPSHOT tested !
     def createManualIndex(self, indexName, indexClass):
         """Creates a manual index
         @params name: The index name
         @params indexClass: vertex or edge
 
         @returns The created Index"""
-        content = self.__createIndex(indexName, indexClass, 'manual')
-        return Index(self, content['name'], content['class'], content['type'])
+
+        indexClass = indexClass.lower()
+        if indexClass != 'vertex' and indexClass != 'edge':
+          raise RexsterException("%s is not a valid indexClass" % indexClass)
+
+        url = "%s/indices/%s?class=%s" % (self.url, indexName, indexClass)
+        r = requests.post(url)
+        content = simplejson.loads(r.content)
+        if r.error:
+            raise RexsterException(content['message'])
+        content = content['results']
+        return Index(self, content['name'], content['class'])
 
     # Rexster v2.2.0-SNAPSHOT tested !
     def createAutomaticIndex(self, indexName, indexClass, autoKey):
@@ -544,7 +534,8 @@ class RexsterIndexableGraph(RexsterGraph):
         if r.error:          
           raise RexsterException('Key Index create error !')
 
-    def getIndices(self):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def getManualIndices(self):
         """Returns a generator function over all the existing indexes
 
         @returns A generator function over all rhe Index objects"""
@@ -554,9 +545,10 @@ class RexsterIndexableGraph(RexsterGraph):
         if r.error:
             raise RexsterException(content['message'])
         for index in content['results']:
-            yield Index(self, index['name'], index['class'], index['type'])
+            yield Index(self, index['name'], index['class'])
 
-    def getIndex(self, indexName, indexClass=None):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def getManualIndex(self, indexName, indexClass=None):
         """Retrieves an index with a given index name and class
         @params indexName: The index name
         @params indexClass: VERTICES or EDGES
@@ -564,18 +556,13 @@ class RexsterIndexableGraph(RexsterGraph):
         @return The Index object or None"""
         url = "%s/indices/%s" % (self.url, indexName)
         r = requests.get(url)
-        #rexster 0.4 content = simplejson.loads(r.content)
-        content = simplejson.loads(r.content)['results'] #rexster 0.5
+        content = simplejson.loads(r.content)['results']
         if r.error:
             return None
-        if content['type'] == 'automatic':
-            return AutomaticIndex(self, content['name'],
-                                content['class'], content['type'])
-        else:
-            return Index(self, content['name'], content['class'],
-                        content['type'])
+        return Index(self, content['name'], content['class'])
 
-    def dropIndex(self, indexName):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def dropManualIndex(self, indexName):
         """Removes an index with a given indexName
         @params indexName: The index name"""
         url = "%s/indices/%s" % (self.url, indexName)
