@@ -76,7 +76,7 @@ class Element(object):
           self.properties[key] = value
 
         url_frag = ''
-        for key, value in self.properties.iteritems():
+        for key, value in self.properties.iteritems():          
           url_frag += '%s=%s&' % (key,value)
           
         r = requests.put(self.url + '?' + url_frag)
@@ -121,7 +121,7 @@ class Element(object):
       else:
         return False
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class Vertex(Element):
     """An abstract class defining a Vertex object representing
     a node of the graph with a set of properties"""
@@ -136,10 +136,12 @@ class Vertex(Element):
         url = "%s/vertices/%s" % (graph.url, _id)
         super(Vertex, self).__init__(graph, url)
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def _generator(self, generator):
         for item in generator:
             yield Edge(self.graph, item.get('_id'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getOutEdges(self, label=None):
         """Gets all the outgoing edges of the node. If label
         parameter is provided, it only returns the edges of
@@ -154,6 +156,7 @@ class Vertex(Element):
         r = requests.get(url)
         return self._generator(simplejson.loads(r.content)['results'])
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getInEdges(self, label=None):
         """Gets all the incoming edges of the node. If label
         parameter is provided, it only returns the edges of
@@ -168,6 +171,7 @@ class Vertex(Element):
         r = requests.get(url)
         return self._generator(simplejson.loads(r.content)['results'])
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getBothEdges(self, label=None):
         """Gets all the edges of the node. If label
         parameter is provided, it only returns the edges of
@@ -182,14 +186,16 @@ class Vertex(Element):
         r = requests.get(url)
         return self._generator(simplejson.loads(r.content)['results'])
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __str__(self):
         return "Vertex %s: %s" % (self._id, self.properties)
 
-
+# Rexster v2.2.0-SNAPSHOT tested !
 class Edge(Element):
     """An abstract class defining a Edge object representing
     a relationship of the graph with a set of properties"""
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __init__(self, graph, _id):
         """Creates a new edge
         @params graph: The graph object the edge belongs
@@ -199,24 +205,28 @@ class Edge(Element):
         url = "%s/edges/%s" % (graph.url, _id)
         super(Edge, self).__init__(graph, url)
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getOutVertex(self):
         """Returns the origin Vertex of the relationship
 
         @returns The origin Vertex"""
         return Vertex(self.graph, self.properties.get('_outV'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getInVertex(self):
         """Returns the target Vertex of the relationship
 
         @returns The target Vertex"""
         return Vertex(self.graph, self.properties.get('_inV'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getLabel(self):
         """Returns the label of the relationship
 
         @returns The edge label"""
         return self.properties.get('_label')
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def __str__(self):
         return "Edge %s: %s" % (self._id, self.properties)
 
@@ -252,6 +262,7 @@ class RexsterGraph(object):
             v.updateProperties(**properties)
             return v
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getVertex(self, _id):
         """Retrieves an existing vertex from the graph
         @params _id: Node unique identifier
@@ -279,6 +290,7 @@ class RexsterGraph(object):
         except KeyError:
             raise RexsterException("Could retrieve indexed vertices")
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getVertices(self):
         """Returns an iterator with all the vertices"""
         url = "%s/vertices" % self.url
@@ -286,6 +298,7 @@ class RexsterGraph(object):
         for vertex in simplejson.loads(r.content)['results']:
             yield Vertex(self, vertex.get('_id'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def removeVertex(self, vertex):
         """Removes the given vertex
         @params vertex: Node to be removed"""
@@ -295,7 +308,8 @@ class RexsterGraph(object):
         if r.error:
             raise RexsterException("Could not delete vertex")
 
-    def addEdge(self, outV, inV, label):
+    # Rexster v2.2.0-SNAPSHOT tested !
+    def addEdge(self, outV, inV, label, properties=None):
         """Creates a new edge
         @params outVertex: Edge origin Vertex
         @params inVertex: Edge target vertex
@@ -312,9 +326,12 @@ class RexsterGraph(object):
         r = requests.post(url, data=data)
         if r.error:
             raise RexsterException("Could not create the edge")
-        properties = simplejson.loads(r.content)['results']
-        return Edge(self, properties['_id'])
+        props = simplejson.loads(r.content)['results']
+        e = Edge(self, props['_id'])
+        e.updateProperties(**properties)
+        return e
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getEdges(self):
         """Returns an iterator with all the edges"""
         url = "%s/edges" % self.url
@@ -326,6 +343,7 @@ class RexsterGraph(object):
             for edge in content['results']:
                 yield Edge(self, edge.get('_id'))
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def getEdge(self, _id):
         """Retrieves an existing edge from the graph
         @params _id: Edge unique identifier
@@ -336,6 +354,7 @@ class RexsterGraph(object):
         except RexsterException:
             return None
 
+    # Rexster v2.2.0-SNAPSHOT tested !
     def removeEdge(self, edge):
         """Removes the given edge
         @params edge: The edge to be removed"""
